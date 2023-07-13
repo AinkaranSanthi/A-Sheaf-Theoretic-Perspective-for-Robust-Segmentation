@@ -34,4 +34,4 @@ python main.py --modeltype 'HybridShapeVQUnet' --contrastive True --topo_epoch 2
 Contributors names and contact info
 
 Ainkaran Santhirasekaram (a.santhirasekaram19@imperial.ac.uk)
-![image](https://github.com/AinkaranSanthi/A-Sheaf-Theoretic-Perspective-for-Robust-Segmentation/assets/93624569/d645e3dd-b65c-4b27-b508-b1a84a5e294c)
+
