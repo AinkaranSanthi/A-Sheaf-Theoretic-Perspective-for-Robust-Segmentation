@@ -35,3 +35,8 @@ Contributors names and contact info
 
 Ainkaran Santhirasekaram (a.santhirasekaram19@imperial.ac.uk)
 
+## References
+
+* [escnn](https://github.com/QUVA-Lab/escnn/tree/master)
+* [Persistent Homology Segmentation Loss](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9872052)
+
