@@ -33,7 +33,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Vector Quantisation  training and evaluation script', add_help=False)
     parser.add_argument('--batch_size', default=1, type=int)
     parser.add_argument('--epochs', default=200, type=int)
-    parser.add_argument('--topo_epoch', type=int,  default=25,
+    parser.add_argument('--topo_epoch', type=int,  default=10,
                         help='Epoch from which to include the topological loss')
 
     # Model parameters

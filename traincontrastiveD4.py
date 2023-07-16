@@ -258,9 +258,10 @@ class TrainD4:
                     lab = torch.squeeze(self._one_hot_encoder(lab), dim = 2)
                     labt = lab[:,1:] if self.topo_fg_only == False else torch.unsqueeze(torch.sum(lab[:,1:],dim=1), dim =1)
                     out0, latentt20, latentadc0, vqt20, q_loss0 = self._model(img)
-                    out0t = out0[:,1:] if self.topo_fg_only == False else torch.unsqueeze(torch.sum(out0[:,1:],dim=1), dim =1)
                     out0 = torch.softmax(out0, dim = 1)
+                    out0t = out0[:,1:] if self.topo_fg_only == False else torch.unsqueeze(torch.sum(out0[:,1:],dim=1), dim =1)
                     vqloss += q_loss0
+                    diceloss += dice_loss(out0, lab, softmax=False)
 
                     if epoch > self.topo_epoch:
                        for i in range(labt.shape[0]):
@@ -273,26 +274,28 @@ class TrainD4:
                     
                     for i in range(4):
                         for j in range(2):
-                            image = img.rot90(i, (2, 3)).rot90(j*2, (2, 4))
-                            label = lab.rot90(i, (2, 3)).rot90(j*2, (2, 4))
+                            if i+j > 0:
+                               image = img.rot90(i, (2, 3)).rot90(j*2, (2, 4))
+                               label = lab.rot90(i, (2, 3)).rot90(j*2, (2, 4))
 
-                            out, latentt2, latentadc, vqt2, q_loss = self._model(image)
-                            out = torch.softmax(out, dim = 1)
-                            diceloss += dice_loss(out, label, softmax=False)
-                            vqloss += q_loss
-                            latentt2T = latentt2.rot90(-i, (2, 3)).rot90(-j*2, (2, 4))
-                            latentadcT = latentadc.rot90(-i, (2, 3)).rot90(-j*2, (2, 4))
-                            if self.equivariant_loss == 'MSE':
-                               equivariantloss += (torch.sum((latentt20 - latentt2T)**2) + torch.sum((latentadc0 - latentadcT)**2))/(latentadc0.shape[2]*latentadc0.shape[3]*latentadc0.shape[4]) 
-                               invariantloss += (torch.sum((latentt2 - latentadc)**2))/(latentadc.shape[2]*latentadc.shape[3]*latentadc.shape[4]) 
+                               out, latentt2, latentadc, vqt2, q_loss = self._model(image)
+                               out = torch.softmax(out, dim = 1)
+                               diceloss += dice_loss(out, label, softmax=False)
+                               vqloss += q_loss
+                               latentt2T = latentt2.rot90(-i, (2, 3)).rot90(-j*2, (2, 4))
+                               latentadcT = latentadc.rot90(-i, (2, 3)).rot90(-j*2, (2, 4))
+                               if self.equivariant_loss == 'MSE':
+                                 equivariantloss += (torch.sum((latentt20 - latentt2T)**2) + torch.sum((latentadc0 - latentadcT)**2))/(latentadc0.shape[2]*latentadc0.shape[3]*latentadc0.shape[4]) 
+                                 invariantloss += (torch.sum((latentt2 - latentadc)**2))/(latentadc.shape[2]*latentadc.shape[3]*latentadc.shape[4]) 
+                               else:
+                                 equivariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentt20, (latentt20.shape[0]* latentt20.shape[1], -1)) * torch.reshape(latentt2T, (latentt20.shape[0]* latentt20.shape[1], -1)), dim = 1) / (latentt20.shape[2]*latentt20.shape[3]*latentt20.shape[4]))) 
+                                 equivariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentadc0, (latentadc0.shape[0]* latentadc0.shape[1], -1)) * torch.reshape(latentadcT, (latentadc0.shape[0]* latentadc0.shape[1], -1)), dim = 1) / (latentadc0.shape[2]*latentadc0.shape[3]*latentadc0.shape[4]))) 
+                                 invariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentt2, (latentt2.shape[0]* latentt2.shape[1], -1)) * torch.reshape(latentadc, (latentadc.shape[0]* latentadc.shape[1], -1)), dim = 1) / (latentadc.shape[2]*latentadc.shape[3]*latentadc.shape[4]))) 
                             else:
-                               equivariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentt20, (latentt20.shape[0]* latentt20.shape[1], -1)) * torch.reshape(latentt2T, (latentt20.shape[0]* latentt20.shape[1], -1)), dim = 1) / (latentt20.shape[2]*latentt20.shape[3]*latentt20.shape[4]))) 
-                               equivariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentadc0, (latentadc0.shape[0]* latentadc0.shape[1], -1)) * torch.reshape(latentadcT, (latentadc0.shape[0]* latentadc0.shape[1], -1)), dim = 1) / (latentadc0.shape[2]*latentadc0.shape[3]*latentadc0.shape[4]))) 
-                               invariantloss += torch.exp(-1*torch.sum(torch.sum(torch.reshape(latentt2, (latentt2.shape[0]* latentt2.shape[1], -1)) * torch.reshape(latentadc, (latentadc.shape[0]* latentadc.shape[1], -1)), dim = 1) / (latentadc.shape[2]*latentadc.shape[3]*latentadc.shape[4]))) 
-                            
+                                continue
                                                 
-                    total_loss = diceloss+ vqloss + topoloss + equivariantloss + invariantloss
-                    print('epoch:%.3f'% (epoch),'topo_loss: %.3f' % (topoloss), 'seg: %.3f' % (diceloss), 'qloss: %.3f' % (vqloss), 'equivariantloss: %.3f' % (equivariantloss), 'invariantloss: %.3f' % (invariantloss))
+                    total_loss = diceloss/8+ vqloss/8 + topoloss/100 + equivariantloss + invariantloss
+                    print('epoch:%.3f'% (epoch),'topo_loss: %.3f' % (topoloss/100), 'seg: %.3f' % (diceloss/8), 'qloss: %.3f' % (vqloss/8), 'equivariantloss: %.3f' % (equivariantloss), 'invariantloss: %.3f' % (invariantloss))
                     writer.add_scalar('VQLoss/train', total_loss,  k*epoch)
                     writer.add_scalar('seg_loss/train', diceloss,  k*epoch)
                     self.opt_vq.zero_grad()

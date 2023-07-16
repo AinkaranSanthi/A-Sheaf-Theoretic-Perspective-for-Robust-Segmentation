@@ -267,8 +267,8 @@ class TrainSE3:
                                patch_out = self.Cellular_patches3D(patcheso, patch_dim[0], patch_dim[1], patch_dim[2]) if self.dim == '3D' else self.Cellular_patches2D(patcheso, patch_dim[0], patch_dim[1])
                                topoloss += topo_loss(patch_out, patch_lab)
 
-                    total_loss = diceloss + vqloss + topoloss + invariantloss
-                    print('epoch:%.3f'% (epoch),'topo_loss: %.3f' % (topoloss), 'seg: %.3f' % (diceloss), 'qloss: %.3f' % (vqloss), 'invariantloss: %.3f' % (invariantloss))
+                    total_loss = diceloss + vqloss + topoloss/100 + invariantloss
+                    print('epoch:%.3f'% (epoch),'topo_loss: %.3f' % (topoloss/100), 'seg: %.3f' % (diceloss), 'qloss: %.3f' % (vqloss), 'invariantloss: %.3f' % (invariantloss))
                     writer.add_scalar('VQLoss/train', total_loss,  k*epoch)
                     writer.add_scalar('seg_loss/train', diceloss,  k*epoch)
                     self.opt_vq.zero_grad()
